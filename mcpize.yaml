@@ -1,5 +1,5 @@
 name: linguaguard
-runtime: node20
+runtime: typescript
 entrypoint: dist/index.js
 build: npm run build
 start: node dist/index.js
