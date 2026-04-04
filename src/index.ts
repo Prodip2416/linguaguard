@@ -1,18 +1,3 @@
-/**
- * index.ts — LinguaGuard MCP Server Entry Point
- *
- * This is the main file that:
- *   1. Creates the MCP server instance
- *   2. Registers all 7 LinguaGuard tools with their schemas
- *   3. Routes incoming tool calls to the right handler function
- *   4. Starts listening via stdio transport (standard for local MCP servers)
- *
- * How it works:
- *   - Your AI editor (Claude, Cursor, etc.) starts this process
- *   - The editor sends tool call requests over stdin
- *   - This server processes them and sends responses over stdout
- *   - All config comes from environment variables set in your editor's MCP config
- */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -25,7 +10,7 @@ import { runSyncKeyTool } from "./tools/syncKeys.js";
 import { runNamingCheckerTool } from "./tools/namingChecker.js";
 import { runHealthReportTool } from "./tools/healthReport.js";
 import { runAiTranslationTool } from "./tools/aiTranslation.js";
-import { runCiGuardTool } from "./tools/ciGuard.js";
+import { runCiGuardTool, runCiGuardCli } from "./tools/ciGuard.js";
 
 // ─── Server setup ─────────────────────────────────────────────────────────────
 
@@ -33,10 +18,6 @@ const server = new McpServer({
   name: "linguaguard",
   version: "1.0.0",
 });
-
-// ─── Shared input schema fields ───────────────────────────────────────────────
-// These optional fields let users override env vars on a per-call basis.
-// If not provided, each tool falls back to the environment variables.
 
 const commonFields = {
   locales_path: z
@@ -65,11 +46,11 @@ const commonFields = {
 
 // ─── Tool 1: find_missing_keys ────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "find_missing_keys",
-  "Find translation keys that exist in the primary language file but are missing in one or more other language files. Use this to ensure all languages are fully translated.",
   {
-    ...commonFields,
+    description: "Find translation keys that exist in the primary language file but are missing in one or more other language files. Use this to ensure all languages are fully translated.",
+    inputSchema: commonFields,
   },
   async (args) => {
     const result = runMissingKeysTool(args);
@@ -79,17 +60,19 @@ server.tool(
 
 // ─── Tool 2: find_unused_keys ─────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "find_unused_keys",
-  "Scan the project source code (JS/TS/JSX/TSX/Vue/Svelte files) to find translation keys that are defined in locale files but never used in any source file. Helps clean up dead translations.",
   {
-    ...commonFields,
-    project_root: z
-      .string()
-      .optional()
-      .describe(
-        "Root directory of the frontend project to scan for key usage. Defaults to PROJECT_ROOT env var or current directory."
-      ),
+    description: "Scan the project source code (JS/TS/JSX/TSX/Vue/Svelte files) to find translation keys that are defined in locale files but never used in any source file. Helps clean up dead translations.",
+    inputSchema: {
+      ...commonFields,
+      project_root: z
+        .string()
+        .optional()
+        .describe(
+          "Root directory of the frontend project to scan for key usage. Defaults to PROJECT_ROOT env var or current directory."
+        ),
+    },
   },
   async (args) => {
     const result = await runUnusedKeysTool(args);
@@ -99,27 +82,29 @@ server.tool(
 
 // ─── Tool 3: sync_key ─────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "sync_key",
-  "Add a new translation key to ALL language files at once. The primary language gets the real value; other languages get a [TODO] placeholder so you know what still needs translating.",
   {
-    ...commonFields,
-    key: z
-      .string()
-      .describe(
-        "The translation key to add, in dot notation (e.g. auth.forgot_password or common.submit_button)"
-      ),
-    value: z
-      .string()
-      .describe(
-        "The translation value for the primary language (e.g. 'Forgot your password?')"
-      ),
-    overwrite: z
-      .boolean()
-      .optional()
-      .describe(
-        "Set to true to overwrite the key if it already exists in a language file. Default: false."
-      ),
+    description: "Add a new translation key to ALL language files at once. The primary language gets the real value; other languages get a [TODO] placeholder so you know what still needs translating.",
+    inputSchema: {
+      ...commonFields,
+      key: z
+        .string()
+        .describe(
+          "The translation key to add, in dot notation (e.g. auth.forgot_password or common.submit_button)"
+        ),
+      value: z
+        .string()
+        .describe(
+          "The translation value for the primary language (e.g. 'Forgot your password?')"
+        ),
+      overwrite: z
+        .boolean()
+        .optional()
+        .describe(
+          "Set to true to overwrite the key if it already exists in a language file. Default: false."
+        ),
+    },
   },
   async (args) => {
     const result = runSyncKeyTool(args);
@@ -129,17 +114,19 @@ server.tool(
 
 // ─── Tool 4: check_naming_convention ─────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "check_naming_convention",
-  "Check all translation keys to ensure they follow a consistent naming style. Detects keys that violate the configured convention (snake_case, camelCase, kebab-case, or PascalCase).",
   {
-    ...commonFields,
-    naming_convention: z
-      .enum(["snake_case", "camelCase", "kebab-case", "PascalCase"])
-      .optional()
-      .describe(
-        "Naming convention to enforce. Defaults to NAMING_CONVENTION env var (e.g. snake_case)"
-      ),
+    description: "Check all translation keys to ensure they follow a consistent naming style. Detects keys that violate the configured convention (snake_case, camelCase, kebab-case, or PascalCase).",
+    inputSchema: {
+      ...commonFields,
+      naming_convention: z
+        .enum(["snake_case", "camelCase", "kebab-case", "PascalCase"])
+        .optional()
+        .describe(
+          "Naming convention to enforce. Defaults to NAMING_CONVENTION env var (e.g. snake_case)"
+        ),
+    },
   },
   async (args) => {
     const result = runNamingCheckerTool(args);
@@ -149,19 +136,21 @@ server.tool(
 
 // ─── Tool 5: i18n_health_report ──────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "i18n_health_report",
-  "Generate a full i18n health dashboard for your project. Shows per-language completeness %, missing key counts, unused keys, naming violations, and an overall health score out of 100.",
   {
-    ...commonFields,
-    naming_convention: z
-      .enum(["snake_case", "camelCase", "kebab-case", "PascalCase"])
-      .optional()
-      .describe("Naming convention to check against. Defaults to NAMING_CONVENTION env var."),
-    project_root: z
-      .string()
-      .optional()
-      .describe("Root directory to scan for key usage. Defaults to PROJECT_ROOT env var or '.'."),
+    description: "Generate a full i18n health dashboard for your project. Shows per-language completeness %, missing key counts, unused keys, naming violations, and an overall health score out of 100.",
+    inputSchema: {
+      ...commonFields,
+      naming_convention: z
+        .enum(["snake_case", "camelCase", "kebab-case", "PascalCase"])
+        .optional()
+        .describe("Naming convention to check against. Defaults to NAMING_CONVENTION env var."),
+      project_root: z
+        .string()
+        .optional()
+        .describe("Root directory to scan for key usage. Defaults to PROJECT_ROOT env var or '.'."),
+    },
   },
   async (args) => {
     const result = await runHealthReportTool(args);
@@ -171,17 +160,19 @@ server.tool(
 
 // ─── Tool 6: suggest_translations ────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "suggest_translations",
-  "Use Claude AI to automatically suggest translations for missing keys. Finds all keys absent in non-primary languages and asks Claude to translate them from the primary language. Requires ANTHROPIC_API_KEY in env.",
   {
-    ...commonFields,
-    max_keys: z
-      .number()
-      .optional()
-      .describe(
-        "Maximum number of missing keys to translate per language in one call. Default: 20. Lower this if responses are too slow."
-      ),
+    description: "Use Claude AI to automatically suggest translations for missing keys. Finds all keys absent in non-primary languages and asks Claude to translate them from the primary language. Requires ANTHROPIC_API_KEY in env.",
+    inputSchema: {
+      ...commonFields,
+      max_keys: z
+        .number()
+        .optional()
+        .describe(
+          "Maximum number of missing keys to translate per language in one call. Default: 20. Lower this if responses are too slow."
+        ),
+    },
   },
   async (args) => {
     const result = await runAiTranslationTool(args);
@@ -191,11 +182,11 @@ server.tool(
 
 // ─── Tool 7: ci_guard ────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
   "ci_guard",
-  "Run a CI/CD safety check for missing translation keys. Returns a pass/fail result and lists all missing keys. Useful in pull request reviews and pre-merge checks. Would exit with code 1 in a real pipeline.",
   {
-    ...commonFields,
+    description: "Run a CI/CD safety check for missing translation keys. Returns a pass/fail result and lists all missing keys. Useful in pull request reviews and pre-merge checks. Would exit with code 1 in a real pipeline.",
+    inputSchema: commonFields,
   },
   async (args) => {
     const result = runCiGuardTool(args);
@@ -215,6 +206,12 @@ server.tool(
  *   - stderr is used for logs/warnings (visible in editor's MCP logs)
  */
 async function main() {
+  // Handle --ci-guard CLI mode (runs check and exits, no MCP server needed)
+  if (process.argv.includes("--ci-guard")) {
+    runCiGuardCli();
+    return;
+  }
+
   const transport = new StdioServerTransport();
 
   // Log to stderr so it doesn't interfere with the MCP stdio protocol on stdout

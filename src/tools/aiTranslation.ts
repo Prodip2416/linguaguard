@@ -175,7 +175,7 @@ Return the ${langName} translations as a JSON object with the same keys:`;
 
     try {
       const message = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 2048,
         messages: [{ role: "user", content: prompt }],
       });
@@ -186,8 +186,9 @@ Return the ${langName} translations as a JSON object with the same keys:`;
         .map((block) => (block as { type: "text"; text: string }).text)
         .join("");
 
-      // Parse the JSON response
-      const parsed = JSON.parse(responseText.trim()) as Record<string, string>;
+      // Strip markdown code fences if Claude wraps the response (e.g. ```json ... ```)
+      const cleanedText = responseText.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      const parsed = JSON.parse(cleanedText) as Record<string, string>;
 
       for (const key of keysToTranslate) {
         if (parsed[key]) {
