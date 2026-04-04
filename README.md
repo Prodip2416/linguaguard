@@ -326,7 +326,7 @@ Shows:
 ### `suggest_translations`
 Uses the **Claude AI API** to suggest translations for all missing keys. Groups results by language and returns them ready to review.
 
-**Requires:** `ANTHROPIC_API_KEY` in your MCP config env.
+**Requires:** Your own `ANTHROPIC_API_KEY` in your MCP config env. No key is bundled or shared.
 
 **Example prompt:** *"Suggest French and Bengali translations for my missing keys."*
 
@@ -379,7 +379,7 @@ node /path/to/linguaguard/dist/index.js --ci-guard
 
 **`suggest_translations` not working?**
 - Make sure `ANTHROPIC_API_KEY` is set in your MCP config env
-- The key must be valid and have access to `claude-sonnet-4-20250514`
+- The key must be valid and have access to `claude-sonnet-4-5`
 
 **Unused keys tool showing too many false positives?**
 - If you use dynamic translation keys like `` t(`nav.${page}`) ``, those can't be detected statically and will appear as "unused". Add a comment or review manually.
