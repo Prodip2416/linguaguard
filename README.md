@@ -73,7 +73,7 @@ All config is passed via environment variables in your editor's MCP config:
 | `PRIMARY_LANG`      | Yes      | `en`           | The reference language all others are compared against   |
 | `FILE_EXTENSION`    | No       | `json`         | Locale file extension (currently supports `json`)        |
 | `NAMING_CONVENTION` | No       | `snake_case`   | Key style: `snake_case`, `camelCase`, `kebab-case`, `PascalCase` |
-| `ANTHROPIC_API_KEY` | No       | —              | Required only for the `suggest_translations` tool        |
+| `ANTHROPIC_API_KEY` | No       | —              | Only needed for `suggest_translations`. Omit if you don't use AI translation. Never commit this to git. |
 | `PROJECT_ROOT`      | No       | `.`            | Root dir to scan for key usage (for unused key detection)|
 
 ### Example locale folder structure
@@ -125,12 +125,12 @@ Edit the file: `~/Library/Application Support/Claude/claude_desktop_config.json`
       "command": "node",
       "args": ["/absolute/path/to/linguaguard/dist/index.js"],
       "env": {
-        "LOCALES_PATH": "./src/locales",
+        "LOCALES_PATH": "/absolute/path/to/your-project/src/locales",
         "LANGUAGES": "en,fr,bn,ar",
         "PRIMARY_LANG": "en",
         "FILE_EXTENSION": "json",
         "NAMING_CONVENTION": "snake_case",
-        "ANTHROPIC_API_KEY": "your_api_key_here"
+        "ANTHROPIC_API_KEY": "your_api_key_here"  // optional — only needed for suggest_translations
       }
     }
   }
@@ -152,12 +152,12 @@ Create or edit the file: `.cursor/mcp.json` in your home directory or project ro
       "command": "node",
       "args": ["/absolute/path/to/linguaguard/dist/index.js"],
       "env": {
-        "LOCALES_PATH": "./src/locales",
+        "LOCALES_PATH": "/absolute/path/to/your-project/src/locales",
         "LANGUAGES": "en,fr,bn,ar",
         "PRIMARY_LANG": "en",
         "FILE_EXTENSION": "json",
         "NAMING_CONVENTION": "snake_case",
-        "ANTHROPIC_API_KEY": "your_api_key_here"
+        "ANTHROPIC_API_KEY": "your_api_key_here"  // optional — only needed for suggest_translations
       }
     }
   }
@@ -180,12 +180,12 @@ Create the file `.vscode/mcp.json` inside your project folder:
       "command": "node",
       "args": ["/absolute/path/to/linguaguard/dist/index.js"],
       "env": {
-        "LOCALES_PATH": "./src/locales",
+        "LOCALES_PATH": "/absolute/path/to/your-project/src/locales",
         "LANGUAGES": "en,fr,bn,ar",
         "PRIMARY_LANG": "en",
         "FILE_EXTENSION": "json",
         "NAMING_CONVENTION": "snake_case",
-        "ANTHROPIC_API_KEY": "your_api_key_here"
+        "ANTHROPIC_API_KEY": "your_api_key_here"  // optional — only needed for suggest_translations
       }
     }
   }
@@ -207,12 +207,12 @@ Edit the file: `~/.codeium/windsurf/mcp_config.json`
       "command": "node",
       "args": ["/absolute/path/to/linguaguard/dist/index.js"],
       "env": {
-        "LOCALES_PATH": "./src/locales",
+        "LOCALES_PATH": "/absolute/path/to/your-project/src/locales",
         "LANGUAGES": "en,fr,bn,ar",
         "PRIMARY_LANG": "en",
         "FILE_EXTENSION": "json",
         "NAMING_CONVENTION": "snake_case",
-        "ANTHROPIC_API_KEY": "your_api_key_here"
+        "ANTHROPIC_API_KEY": "your_api_key_here"  // optional — only needed for suggest_translations
       }
     }
   }
@@ -235,7 +235,7 @@ Edit `~/.config/zed/settings.json` and add a `context_servers` section:
         "path": "node",
         "args": ["/absolute/path/to/linguaguard/dist/index.js"],
         "env": {
-          "LOCALES_PATH": "./src/locales",
+          "LOCALES_PATH": "/absolute/path/to/your-project/src/locales",
           "LANGUAGES": "en,fr,bn,ar",
           "PRIMARY_LANG": "en",
           "FILE_EXTENSION": "json",
@@ -261,12 +261,12 @@ Open VS Code **Settings** (`Cmd+,`), switch to JSON view, and add:
       "command": "node",
       "args": ["/absolute/path/to/linguaguard/dist/index.js"],
       "env": {
-        "LOCALES_PATH": "./src/locales",
+        "LOCALES_PATH": "/absolute/path/to/your-project/src/locales",
         "LANGUAGES": "en,fr,bn,ar",
         "PRIMARY_LANG": "en",
         "FILE_EXTENSION": "json",
         "NAMING_CONVENTION": "snake_case",
-        "ANTHROPIC_API_KEY": "your_api_key_here"
+        "ANTHROPIC_API_KEY": "your_api_key_here"  // optional — only needed for suggest_translations
       }
     }
   }
@@ -391,6 +391,33 @@ node /path/to/linguaguard/dist/index.js --ci-guard
 
 ---
 
+## Supported Languages
+
+LinguaGuard works with **any language** that uses JSON locale files. The `suggest_translations` tool has built-in AI support for these languages:
+
+| Code | Language         | Code | Language         |
+|------|-----------------|------|-----------------|
+| `en` | English          | `ko` | Korean           |
+| `bn` | Bengali (Bangla) | `hi` | Hindi            |
+| `ar` | Arabic           | `tr` | Turkish          |
+| `fr` | French           | `pl` | Polish           |
+| `de` | German           | `sv` | Swedish          |
+| `es` | Spanish          | `da` | Danish           |
+| `pt` | Portuguese       | `fi` | Finnish          |
+| `it` | Italian          | `no` | Norwegian        |
+| `nl` | Dutch            | `uk` | Ukrainian        |
+| `ru` | Russian          | `vi` | Vietnamese       |
+| `zh` | Chinese (Simplified) | `th` | Thai         |
+| `ja` | Japanese         | `id` | Indonesian       |
+| `ms` | Malay            | `ro` | Romanian         |
+| `cs` | Czech            | `sk` | Slovak           |
+| `hu` | Hungarian        | `el` | Greek            |
+| `he` | Hebrew           | `fa` | Persian (Farsi)  |
+
+> For any other language not in this list, AI translation will still attempt to translate using the language code directly.
+
+---
+
 ## Project Structure
 
 ```
@@ -408,7 +435,15 @@ linguaguard/
 │   └── utils/
 │       ├── fileReader.ts         # reads and flattens locale JSON files
 │       └── codeScanner.ts        # scans source files for key usage
+├── test-locales/                 # demo locale files for quick testing
+│   ├── en.json                   # primary language (complete)
+│   ├── fr.json                   # intentionally incomplete — for demo
+│   └── bn.json                   # intentionally incomplete — for demo
+├── .github/
+│   └── workflows/
+│       └── ci.yml                # GitHub Actions — build + i18n guard
 ├── dist/                         # compiled output (run npm run build)
+├── mcpize.yaml                   # mcpize marketplace config
 ├── package.json
 ├── tsconfig.json
 └── README.md
