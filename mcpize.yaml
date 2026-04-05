@@ -3,5 +3,5 @@ runtime: typescript
 entrypoint: dist/index.js
 build: npm install && npm run build
 start: node dist/index.js
-transport: stdio
+transport: http
 description: "MCP server for i18n management — detect missing keys, sync translations across all locales, find unused keys, and suggest AI-powered translations."

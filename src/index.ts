@@ -229,9 +229,10 @@ async function main() {
     // HTTP mode for Cloud Run / mcpize deployment
     process.stderr.write(`[LinguaGuard] HTTP mode on port ${port}\n`);
 
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    await server.connect(transport);
+
     const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-      await server.connect(transport);
       await transport.handleRequest(req, res);
     });
 
