@@ -1,5 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { createServer } from "node:http";
 import { z } from "zod";
 // Import all tool handlers
 import { runMissingKeysTool } from "./tools/missingKeys.js";
@@ -144,16 +146,31 @@ async function main() {
         runCiGuardCli();
         return;
     }
-    const transport = new StdioServerTransport();
-    // Log to stderr so it doesn't interfere with the MCP stdio protocol on stdout
     process.stderr.write("[LinguaGuard] Starting MCP server...\n" +
         `[LinguaGuard] LOCALES_PATH:        ${process.env.LOCALES_PATH ?? "(not set — will use ./src/locales)"}\n` +
         `[LinguaGuard] LANGUAGES:           ${process.env.LANGUAGES ?? "(not set — will use en)"}\n` +
         `[LinguaGuard] PRIMARY_LANG:        ${process.env.PRIMARY_LANG ?? "(not set — will use en)"}\n` +
         `[LinguaGuard] NAMING_CONVENTION:   ${process.env.NAMING_CONVENTION ?? "(not set — will use snake_case)"}\n` +
         `[LinguaGuard] AI Translation:      ${process.env.ANTHROPIC_API_KEY ? "enabled" : "disabled (no ANTHROPIC_API_KEY)"}\n`);
-    await server.connect(transport);
-    process.stderr.write("[LinguaGuard] Server ready. Waiting for tool calls.\n");
+    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : null;
+    if (port) {
+        // HTTP mode for Cloud Run / mcpize deployment
+        process.stderr.write(`[LinguaGuard] HTTP mode on port ${port}\n`);
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+        await server.connect(transport);
+        const httpServer = createServer(async (req, res) => {
+            await transport.handleRequest(req, res);
+        });
+        httpServer.listen(port, () => {
+            process.stderr.write(`[LinguaGuard] Server ready on port ${port}\n`);
+        });
+    }
+    else {
+        // stdio mode for local editor use
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
+        process.stderr.write("[LinguaGuard] Server ready. Waiting for tool calls.\n");
+    }
 }
 main().catch((err) => {
     process.stderr.write(`[LinguaGuard] Fatal error: ${String(err)}\n`);
