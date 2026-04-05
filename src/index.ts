@@ -1,6 +1,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 
 // Import all tool handlers
@@ -212,9 +214,6 @@ async function main() {
     return;
   }
 
-  const transport = new StdioServerTransport();
-
-  // Log to stderr so it doesn't interfere with the MCP stdio protocol on stdout
   process.stderr.write(
     "[LinguaGuard] Starting MCP server...\n" +
     `[LinguaGuard] LOCALES_PATH:        ${process.env.LOCALES_PATH ?? "(not set — will use ./src/locales)"}\n` +
@@ -224,9 +223,27 @@ async function main() {
     `[LinguaGuard] AI Translation:      ${process.env.ANTHROPIC_API_KEY ? "enabled" : "disabled (no ANTHROPIC_API_KEY)"}\n`
   );
 
-  await server.connect(transport);
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : null;
 
-  process.stderr.write("[LinguaGuard] Server ready. Waiting for tool calls.\n");
+  if (port) {
+    // HTTP mode for Cloud Run / mcpize deployment
+    process.stderr.write(`[LinguaGuard] HTTP mode on port ${port}\n`);
+
+    const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+      await server.connect(transport);
+      await transport.handleRequest(req, res);
+    });
+
+    httpServer.listen(port, () => {
+      process.stderr.write(`[LinguaGuard] Server ready on port ${port}\n`);
+    });
+  } else {
+    // stdio mode for local editor use
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    process.stderr.write("[LinguaGuard] Server ready. Waiting for tool calls.\n");
+  }
 }
 
 main().catch((err) => {
