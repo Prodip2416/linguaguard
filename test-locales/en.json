@@ -1,0 +1,26 @@
+{
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "forgot_password": "Forgot your password?",
+    "reset_password": "Reset Password",
+    "sign_up": "Sign Up"
+  },
+  "common": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "loading": "Loading..."
+  },
+  "dashboard": {
+    "welcome": "Welcome back!",
+    "total_users": "Total Users",
+    "recent_activity": "Recent Activity"
+  },
+  "errors": {
+    "not_found": "Page not found",
+    "server_error": "Something went wrong",
+    "unauthorized": "You are not authorized"
+  }
+}

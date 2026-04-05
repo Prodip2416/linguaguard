@@ -1,5 +1,10 @@
 # LinguaGuard — i18n MCP Server
 
+![CI](https://github.com/prodip2416/linguaguard/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
+![MCP](https://img.shields.io/badge/MCP-compatible-blue)
+
 > Manage your translations directly from your AI editor.  
 > Works with Claude Desktop, Cursor, VS Code, Windsurf, Zed, and Cline.
 
@@ -408,6 +413,19 @@ linguaguard/
 ├── tsconfig.json
 └── README.md
 ```
+
+---
+
+## Try It Out (Demo Locales)
+
+A `test-locales/` folder is included with intentionally incomplete translations so you can try LinguaGuard immediately after setup:
+
+```bash
+# Point to the included demo locales
+LOCALES_PATH=./test-locales LANGUAGES=en,fr,bn PRIMARY_LANG=en node dist/index.js --ci-guard
+```
+
+`fr` and `bn` are missing several keys — perfect for testing `find_missing_keys` and `suggest_translations`.
 
 ---
 

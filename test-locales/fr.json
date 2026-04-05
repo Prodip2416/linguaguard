@@ -1,0 +1,16 @@
+{
+  "auth": {
+    "login": "Se connecter",
+    "logout": "Se déconnecter"
+  },
+  "common": {
+    "submit": "Soumettre",
+    "cancel": "Annuler"
+  },
+  "dashboard": {
+    "welcome": "Bon retour!"
+  },
+  "errors": {
+    "not_found": "Page non trouvée"
+  }
+}

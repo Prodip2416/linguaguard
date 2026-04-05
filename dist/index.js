@@ -1,18 +1,3 @@
-/**
- * index.ts — LinguaGuard MCP Server Entry Point
- *
- * This is the main file that:
- *   1. Creates the MCP server instance
- *   2. Registers all 7 LinguaGuard tools with their schemas
- *   3. Routes incoming tool calls to the right handler function
- *   4. Starts listening via stdio transport (standard for local MCP servers)
- *
- * How it works:
- *   - Your AI editor (Claude, Cursor, etc.) starts this process
- *   - The editor sends tool call requests over stdin
- *   - This server processes them and sends responses over stdout
- *   - All config comes from environment variables set in your editor's MCP config
- */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -29,9 +14,6 @@ const server = new McpServer({
     name: "linguaguard",
     version: "1.0.0",
 });
-// ─── Shared input schema fields ───────────────────────────────────────────────
-// These optional fields let users override env vars on a per-call basis.
-// If not provided, each tool falls back to the environment variables.
 const commonFields = {
     locales_path: z
         .string()
