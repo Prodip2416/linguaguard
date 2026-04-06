@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer } from "node:http";
+import crypto from "node:crypto";
 import { z } from "zod";
 // Import all tool handlers
 import { runMissingKeysTool } from "./tools/missingKeys.js";
@@ -117,9 +118,14 @@ async function main() {
     if (port) {
         // HTTP mode for Cloud Run / mcpize deployment
         process.stderr.write(`[LinguaGuard] HTTP mode on port ${port}\n`);
-        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID() });
         await server.connect(transport);
         const httpServer = createServer(async (req, res) => {
+            if (req.method !== "POST") {
+                res.writeHead(405, { Allow: "POST" });
+                res.end("Method Not Allowed");
+                return;
+            }
             await transport.handleRequest(req, res);
         });
         httpServer.listen(port, () => {
